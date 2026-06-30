@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 
+const API_BASE = import.meta.env.VITE_API_URL || "";
+
+
 const DEFAULT_SNIPPETS = {
   python: 'print("Hello from Compile on the Go!")',
   javascript: 'console.log("Hello from Compile on the Go!");',
@@ -35,7 +38,7 @@ export default function App() {
 
   useEffect(() => {
     axios
-      .get("/api/languages")
+      .get(`${API_BASE}/api/languages`)
       .then((res) => setLanguages(res.data))
       .catch(() => setLanguages(Object.keys(DEFAULT_SNIPPETS)));
   }, []);
@@ -63,7 +66,7 @@ export default function App() {
     setError("");
     setAiResponse("");
     try {
-      const res = await axios.post("/api/run", { language, code, stdin });
+      const res = await axios.post(`${API_BASE}/api/run`, { language, code, stdin });
       setOutput(res.data.stdout || "");
       setError(res.data.stderr || "");
     } catch (err) {
@@ -78,7 +81,7 @@ export default function App() {
     setAiLoading(true);
     setAiResponse("");
     try {
-      const res = await axios.post("/api/ai", {
+      const res = await axios.post(`${API_BASE}/api/ai`, {
         language,
         code,
         stdout: output,
