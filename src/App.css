@@ -132,7 +132,7 @@ body {
 
 @media (max-width: 900px) {
   .main { grid-template-columns: 1fr; padding: 16px; }
-  .editor-wrap, .code-editor { min-height: 280px; }
+  .editor-wrap { min-height: 280px; }
 }
 
 @media (max-width: 480px) {
@@ -223,63 +223,53 @@ select:focus-visible, button:focus-visible, textarea:focus-visible {
   border-radius: 8px;
   overflow: hidden;
 }
-
-.gutter {
-  flex-shrink: 0;
-  width: 42px;
-  padding: 14px 0;
-  background: #0a0d14;
-  border-right: 1px solid var(--border);
-  overflow: hidden;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.88rem;
-  line-height: 1.55;
-  text-align: right;
-  user-select: none;
-}
-
-@media (max-width: 480px) {
-  .gutter { width: 32px; font-size: 0.78rem; }
-}
-.gutter-line {
-  padding-right: 10px;
-  color: #454c5c;
-}
-
-@media (max-width: 480px) {
-  .gutter-line { padding-right: 6px; }
-}
-
-.code-editor {
-  flex: 1;
-  min-height: 320px;
-  background: transparent;
-  color: #d8e4ff;
-  border: none;
-  padding: 14px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.88rem;
-  line-height: 1.55;
-  resize: none;
-  caret-color: var(--amber);
-  width: 100%;
-}
-
-@media (max-width: 600px) {
-  .editor-wrap, .code-editor { min-height: 240px; }
-}
-
-@media (max-width: 480px) {
-  .code-editor, .stdin-input, select { font-size: 16px !important; }
-  .code-editor { padding: 10px; }
-}
-.code-editor::placeholder { color: var(--text-dim); }
-.code-editor::selection { background: rgba(255, 180, 84, 0.28); }
-.code-editor:focus { outline: none; }
-.editor-wrap:has(.code-editor:focus) {
+.editor-wrap:focus-within {
   border-color: var(--amber-dim);
   box-shadow: 0 0 0 1px rgba(255, 180, 84, 0.15);
 }
+.editor-wrap .cm-editor {
+  width: 100%;
+  height: 100%;
+}
+.editor-wrap .cm-scroller {
+  font-family: 'JetBrains Mono', monospace;
+  line-height: 1.55;
+}
+
+@media (max-width: 600px) {
+  .editor-wrap { min-height: 240px; }
+}
+@media (max-width: 480px) {
+  .editor-wrap .cm-editor { font-size: 16px; }
+  .stdin-input, select { font-size: 16px !important; }
+}
+
+.run-hint {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  text-align: right;
+  margin: -4px 0 8px;
+  text-transform: lowercase;
+}
+@media (max-width: 480px) {
+  .run-hint { text-align: center; }
+}
+
+.copy-btn {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 5px;
+  padding: 3px 9px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  cursor: pointer;
+  text-transform: lowercase;
+  transition: border-color 0.15s, color 0.15s;
+}
+.copy-btn:hover { border-color: var(--amber); color: var(--amber); }
 
 .stdin-box {
   margin-top: 12px;

@@ -1,8 +1,67 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import CodeMirror from "@uiw/react-codemirror";
+import { langs } from "@uiw/codemirror-extensions-langs";
+import { EditorView } from "@codemirror/view";
 
+// In local dev this stays empty and Vite's proxy (see vite.config.js) forwards
+// /api/* to localhost:5000. In production on Vercel, set VITE_API_URL to your
+// live backend's URL (e.g. https://your-app.herokuapp.com) in Vercel's env settings.
 const API_BASE = import.meta.env.VITE_API_URL || "";
 
+// Maps our language keys to CodeMirror's language-mode loaders for syntax
+// highlighting + keyword/bracket autocomplete.
+const LANG_EXTENSIONS = {
+  python: langs.python,
+  javascript: langs.javascript,
+  typescript: langs.typescript,
+  java: langs.java,
+  c: langs.c,
+  cpp: langs.cpp,
+  go: langs.go,
+  rust: langs.rust,
+  ruby: langs.ruby,
+  php: langs.php,
+  bash: langs.shell,
+  kotlin: langs.kotlin,
+  swift: langs.swift,
+  lua: langs.lua,
+};
+
+// Custom dark theme matching the amber/terminal aesthetic.
+const editorTheme = EditorView.theme(
+  {
+    "&": {
+      backgroundColor: "transparent",
+      color: "#d8e4ff",
+      fontSize: "0.88rem",
+      height: "100%",
+    },
+    ".cm-content": { fontFamily: "'JetBrains Mono', monospace", caretColor: "#ffb454" },
+    ".cm-cursor, .cm-dropCursor": { borderLeftColor: "#ffb454" },
+    "&.cm-focused .cm-selectionBackground, .cm-selectionBackground": {
+      backgroundColor: "rgba(255, 180, 84, 0.22)",
+    },
+    ".cm-gutters": {
+      backgroundColor: "#0a0d14",
+      color: "#454c5c",
+      border: "none",
+      borderRight: "1px solid #1f2530",
+    },
+    ".cm-activeLineGutter, .cm-activeLine": {
+      backgroundColor: "rgba(255, 180, 84, 0.05)",
+    },
+    ".cm-tooltip-autocomplete": {
+      backgroundColor: "#10141c",
+      border: "1px solid #2e3242",
+    },
+    ".cm-tooltip-autocomplete ul li[aria-selected]": {
+      backgroundColor: "rgba(255, 180, 84, 0.18)",
+      color: "#ffb454",
+    },
+  },
+  { dark: true }
+);
 
 const DEFAULT_SNIPPETS = {
   python: 'print("Hello from Compile on the Go!")',
@@ -33,8 +92,7 @@ export default function App() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResponse, setAiResponse] = useState("");
   const outputRef = useRef(null);
-  const textareaRef = useRef(null);
-  const gutterRef = useRef(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     axios
@@ -42,14 +100,6 @@ export default function App() {
       .then((res) => setLanguages(res.data))
       .catch(() => setLanguages(Object.keys(DEFAULT_SNIPPETS)));
   }, []);
-
-  const syncGutterScroll = () => {
-    if (gutterRef.current && textareaRef.current) {
-      gutterRef.current.scrollTop = textareaRef.current.scrollTop;
-    }
-  };
-
-  const lineCount = Math.max(code.split("\n").length, 1);
 
   const handleLangChange = (e) => {
     const lang = e.target.value;
@@ -75,6 +125,24 @@ export default function App() {
       setRunning(false);
       setTimeout(() => outputRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
     }
+  };
+
+  // Ctrl/Cmd + Enter to run from anywhere on the page.
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        e.preventDefault();
+        runCode();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [code, language, stdin]);
+
+  const copyOutput = () => {
+    navigator.clipboard.writeText(output);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
   };
 
   const askAI = async (mode) => {
@@ -137,7 +205,7 @@ export default function App() {
                 </option>
               ))}
             </select>
-            <button className="run-btn" onClick={runCode} disabled={running}>
+            <button className="run-btn" onClick={runCode} disabled={running} title="Ctrl+Enter">
               {running ? (
                 <>
                   <span className="spinner" /> running
@@ -147,23 +215,23 @@ export default function App() {
               )}
             </button>
           </div>
+          <div className="run-hint">ctrl/cmd + enter to run</div>
 
           <div className="editor-wrap">
-            <div className="gutter" ref={gutterRef}>
-              {Array.from({ length: lineCount }, (_, i) => (
-                <div className="gutter-line" key={i}>
-                  {i + 1}
-                </div>
-              ))}
-            </div>
-            <textarea
-              ref={textareaRef}
-              className="code-editor"
+            <CodeMirror
               value={code}
-              onChange={(e) => setCode(e.target.value)}
-              onScroll={syncGutterScroll}
-              spellCheck={false}
-              wrap="off"
+              height="100%"
+              theme={editorTheme}
+              extensions={[LANG_EXTENSIONS[language]?.() ?? []]}
+              onChange={(value) => setCode(value)}
+              basicSetup={{
+                lineNumbers: true,
+                foldGutter: true,
+                autocompletion: true,
+                bracketMatching: true,
+                closeBrackets: true,
+                highlightActiveLine: true,
+              }}
             />
           </div>
 
@@ -188,6 +256,11 @@ export default function App() {
         <section className="output-panel" ref={outputRef}>
           <div className="output-header">
             <span className="prompt-chevron">&gt;_</span> output
+            {output && (
+              <button className="copy-btn" onClick={copyOutput}>
+                {copied ? "copied ✓" : "copy"}
+              </button>
+            )}
           </div>
           <pre className="stdout">{output || "// nothing yet — hit run"}</pre>
 
